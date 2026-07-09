@@ -1,14 +1,14 @@
 datatype fruit
-= Peach
-| Apple
-| Pear
-| Lemon
-| Fig;
+  = Peach
+  | Apple
+  | Pear
+  | Lemon
+  | Fig;
 
 datatype tree
-= Bud
-| Flat of fruit * tree
-| Split of tree * tree;
+  = Bud
+  | Flat of fruit * tree
+  | Split of tree * tree;
 
 fun flat_only(Bud)
   = true
@@ -75,3 +75,86 @@ datatype 'a slist
 and 'a sexp
   = An_atom of 'a
   | A_slist of ('a slist);
+
+fun occurs_in_slist(a, Empty)
+  = 0
+  | occurs_in_slist(a, Scons(se, sl))
+  = occurs_in_sexp(a, se) + occurs_in_slist(a, sl)
+and occurs_in_sexp(a, An_atom(b))
+  = if eq_fruit(a, b)
+    then 1
+    else 0
+  | occurs_in_sexp(a, A_slist(sl))
+  = occurs_in_slist(a, sl);
+
+(* Looks like se and sl in Scons(se, sl)
+   are our old friends car and cdr *)
+fun subst_in_slist(a, b, Empty)
+  = Empty
+  | subst_in_slist(a, b, Scons(se, sl))
+  = Scons(
+      subst_in_sexp(a, b, se),
+      subst_in_slist(a, b, sl)
+    )
+and subst_in_sexp(a, b, An_atom(c))
+  = if eq_fruit(b, c)
+    then An_atom(a)
+    else An_atom(b)
+  | subst_in_sexp(a, b, A_slist(sl))
+  = A_slist(subst_in_slist(a, b, sl));
+
+
+(* Version 1 *)
+(*
+fun eq_fruit_in_atom(a, An_atom(b))
+  = eq_fruit(a, b)
+  | eq_fruit_in_atom(a, A_slist(b))
+  = false
+
+fun rem_from_slist(a, Empty)
+  = Empty
+  | rem_from_slist(a, Scons(se, sl))
+  = if eq_fruit_in_atom(a, se)
+    then rem_from_slist(a, sl)
+    else Scons(
+      rem_from_sexp(a, se),
+      rem_from_slist(a, sl)
+    )
+and rem_from_sexp(a, An_atom(b))
+  = An_atom(b)
+  | rem_from_sexp(a, A_slist(sl))
+  = A_slist(rem_from_slist(a, sl));
+*)
+
+(* Seems that we can avoid a separate
+   'and' clause if we handle the
+   corresponding types in the initial
+   matching block. *)
+fun rem_from_slist(a, Empty)
+  = Empty
+  | rem_from_slist(a, Scons(An_atom(b), sl))
+  = if eq_fruit(a, b)
+    then rem_from_slist(a, sl)
+    else Scons(
+      An_atom(b),
+      rem_from_slist(a, sl))
+  | rem_from_slist(a, Scons(A_slist(b), sl))
+  = Scons(
+      A_slist(rem_from_slist(a, b)),
+      rem_from_slist(a, sl));
+
+(* Hello, old friend *)
+(*
+fun rember(a, Empty)
+  = Empty
+  | rember(a, Cons_cell(An_atom(b), cdr))
+  = if eq_fruit(a, b)
+    then rember(a, cdr)
+    else Cons_cell(
+      An_atom(b),
+      rember(a, cdr))
+  | rember(a, Cons_cell(A_slist(b), cdr))
+  = Cons_cell(
+      A_slist(rember(a, b)),
+      rember(a, cdr));
+*)
